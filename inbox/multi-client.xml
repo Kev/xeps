@@ -33,37 +33,47 @@
 <section1 topic='Introduction' anchor='intro'>
   <p>As time has progressed, people's use of multiple concurrent chat clients (e.g. Phone, Desktop, Web, Tablet) has increased, their expectations have changed, and the original XMPP routing rules are not as helpful as they were intended to be. Here we discuss the issues we believe we're currently facing, and suggest a path forwards for these.</p>
 </section1>
-<section1 topic='Requirements' anchor='reqs'>
-  <p>STRONGLY RECOMMENDED.</p>
-</section1>
-<section1 topic='Glossary' anchor='glossary'>
-  <p>OPTIONAL.</p>
-</section1>
-<section1 topic='Use Cases' anchor='usecases'>
-  <p>STRONGLY RECOMMENDED.</p>
-</section1>
-<section1 topic='Business Rules' anchor='rules'>
-  <p>OPTIONAL.</p>
-</section1>
-<section1 topic='Implementation Notes' anchor='impl'>
-  <p>OPTIONAL.</p>
-</section1>
-<section1 topic='Accessibility Considerations' anchor='access'>
-  <p>OPTIONAL.</p>
-</section1>
-<section1 topic='Internationalization Considerations' anchor='i18n'>
-  <p>OPTIONAL.</p>
+<section1 topic='Issues' anchor='usecases'>
+  <p>.</p>
+  <section2 topic='Presence' anchor='presence'>
+      <p>Every client has their own presence message ('status'), but that doesn't make sense (a user is typically not both 'out and about on my mobile' and 'at home'). Suggest we informally deprecate the status element in favour of storing in PEP. Presence state ('show') is also per-client, but this makes more sense, suggest we keep this (although could be talked out of it!), but define a logical ordering for consistent merging (DND->FFC->Available->Away->NA or whatever).</p>
+  </section2>
+  <section2 topic='Message routing' anchor='messages'>
+      <p>Traditional XMPP has assumed that we only want to send messages to a single device when we're chatting with a user, and do (chat) resource locking for this. In the modern world, this seems unhelpful as users typically want to be able to move between devices freely and continue discussions. We have Carbons as a workaround for this at the moment, but it's not entirely elegant. Would be better to make all chat message sent to a bare JID, and change bare JID routing rules to send to all available resources (which is an allowed routing rule for bare JID messages under 612[01]), and only send full JID for messages that must go to a single device (and therefore to not carbon them, and clients receiving them to ignore them if they're not the right client). Suggest we do away with special message type routing - just bare=all, full=1, until this is shown to be inadequate. Should we send from the bare JID also?</p>
+      <p>Upgrade path here for bare JID is easy, servers can advertise a new feature that they do 'routing2', so clients will know, as it's an allowed RFC behaviour. Full JID is harder, because this isn't RFC-consistent. Currently suggest that we put a payload in the full-JID messages saying 'routing2', such that the server can see a full-JID message without this, assume it's a legacy client, and fall back to RFC rules (sadly). Unless someone can come up with a sensible way that the handling can be RFC compliant.</p>
+  </section2>
+  <section2 topic='Message Ids' anchor='ids'>
+      <p>We need messages to have stable identifiers. MAM gives us these on receipt, but it would be better to have them set by the sender so e.g. references can work nicely - can we do that securely (because clients can spoof things maliciously)? Is it enough to bind the user's (or server's if it's server-enforced) JID into the message?</p>
+  </section2>
+  <section2 topic='Read state' anchor='unread'>
+      <p>Have all messages with an ID (MAM), tell server about change of read state, based on ID of most recently read per target. Server to push this out to clients, which will then display as read and cancel unread message counters. Integrate with archive (BIND2) for announcing how many unread messages exist, for which contacts.</p>
+  </section2>
+  <section2 topic='History' anchor='history'>
+      <p>Use MAM. Two likely models - download everything and do full sync on login, download only what you need when you need it. Disable offline messages with bind2 to avoid race conditions. Also to avoid race conditions, give the last id in the archive on login in bind2, and route all messages received after that to the client - client can backfill based on the id then, if they want. Reflect own messages (even own-client) so there's an id (also means you get the server-transformed version, where that happens). Solve issues with disconnect between what a client receives live and what it receives retrospectively by changing rules to "if a message goes to a bare JID, store it", which ensures consistency.</p>
+  </section2>
+  <section2 topic='Message metadata' anchor='metadata'>
+      <p>We've currently got two main aspects of metadata that we deliver via messages, that we deliver on all devices (ideally), and that make archiving not work terribly well: Message delivery receipts and chat state notifications. To address this, CSN can be moved into directed presence (meaning online clients get them, while they're not in the archive for catchup), and receipts can be handled by the server such that the metadata are stored in the archive. Then we can define a mechanism whereby when getting archive results we can see if they have had receipts sent.</p>
+  </section2>
+  <section2 topic='Chat rooms' anchor='muc'>
+      <p>Use MIX. Until MIX, bookmark rooms as autojoin until the user manually leaves them, at which point all clients can leave.</p>
+  </section2>
+  <section2 topic='Multi-person chat' anchor='impromptu'>
+      <p>Use MIX. Want users to be able to just say "chat with these people" and not care about MUC concepts. Persist until user leaves, like normal rooms. Make them persistent on the server, until the last user leaves.</p>
+  </section2>
+  <section2 topic='Notifications' anchor='notifications'>
+      <p>Want clients to (generally) be consistent. Includes both Push and Highlighting, as well as desktop notifications and unread markers. Set this stuff on the server, and have clients fetch the definitions. Have the server Push messages based on the same definitions. Allow @ing through references, and have this work for highlighting/unread notifications and Push.</p>
+  </section2>
+  <section2 topic='Fast connections' anchor='fastconnect'>
+      <p>We assume long-lived sessions where a few seconds latency on startup is ok (because login is equated with application startup), but with mobile and laptop sleep, and the suchlike this stops being true; we expect to open our laptop or switch to an app on a phone and expect to be able to chat immediately, and waiting a couple of seconds (home) or several seconds (mobile) is a poor experience. We need to be able to get to a state of being able to send messages faster (198 reconnect isn't sufficient here, because we could be talking about hours of disconnection).</p>
+  </section2>
 </section1>
 <section1 topic='Security Considerations' anchor='security'>
-  <p>REQUIRED.</p>
+  <p>None, this document is a discussion point.</p>
 </section1>
 <section1 topic='IANA Considerations' anchor='iana'>
-  <p>REQUIRED.</p>
+  <p>None.</p>
 </section1>
 <section1 topic='XMPP Registrar Considerations' anchor='registrar'>
-  <p>REQUIRED.</p>
-</section1>
-<section1 topic='XML Schema' anchor='schema'>
-  <p>REQUIRED for protocol specifications.</p>
+  <p>None.</p>
 </section1>
 </xep>
