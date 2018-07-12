@@ -422,6 +422,7 @@
     ]]></example>
     <p>Note: There is no concept of an "open query", and servers MUST be prepared to receive arbitrary page requests at any time.</p>
     <p>If the UID contained within an &lt;after&gt; or &lt;before&gt; element is not present in the archive, the server MUST return an item-not-found error in response to the query.</p>
+    <p>It is unusual to specify both &lt;before&gt; and &lt;after&gt; elements for RSM paging, but this is useful in MAM for filling 'holes' in a local copy of an archive. In the case that &lt;before;&gt; and &lt;after&gt; are specified, and the resultant page would be larger tha the &lt;count&gt;-specified page size, the MAM server MUST process as if the &lt;before&gt; had not been specified (i.e. it will return an incomplete result with the first &lt;count&gt; entries following &lt;after&gt;)</p>
     <p>When the results returned by the server are complete (that is: when they are the last page of the result set), the server MUST include a 'complete' attribute on the &lt;fin&gt; element, with a value of 'true'. If it is not the last page of the result set, the server MUST either omit the 'complete' attribute, or give it a value of 'false'.</p>
     <example caption='Server completes a result with the last page of messages'><![CDATA[
 <!-- result messages -->
